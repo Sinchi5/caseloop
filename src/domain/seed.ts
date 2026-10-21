@@ -1,3 +1,4 @@
+import { HOTLINE_ID } from './actors'
 import { HOUR } from './clocks'
 import type { CaseEvent, Person, PersonInput, Referral, RegistryPerson, RiskFactorId } from './types'
 
@@ -37,7 +38,7 @@ export function seedEvents(now: number): CaseEvent[] {
       id: id(caseId),
       caseId,
       at: iso(hoursAgo),
-      actorId: source.kind === 'agency' ? source.officerId : 's-brooks',
+      actorId: source.kind === 'agency' ? source.officerId : HOTLINE_ID,
       type: 'REFERRAL_SUBMITTED',
       referral: {
         source,

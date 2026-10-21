@@ -11,6 +11,9 @@ export const ACTORS: readonly Actor[] = [
   { id: 'p-alvarez', name: 'Sgt. Rosa Alvarez', role: 'police', org: 'Kessler Township Police' },
 ]
 
+/** Reports from the state hotline arrive from the register itself, not from a person in the app. */
+export const HOTLINE_ID = 'scr'
+
 const byId = new Map(ACTORS.map((a) => [a.id, a]))
 
 export function actor(id: string): Actor {
@@ -19,7 +22,7 @@ export function actor(id: string): Actor {
   return a
 }
 
-export const actorName = (id: string) => byId.get(id)?.name ?? 'Unknown user'
+export const actorName = (id: string) => (id === HOTLINE_ID ? 'State Central Register' : (byId.get(id)?.name ?? 'Unknown user'))
 export const isCps = (id: string) => byId.get(id)?.org === CPS_ORG
 export const caseworkers = () => ACTORS.filter((a) => a.role === 'caseworker')
 
