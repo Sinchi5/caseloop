@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
 import { z } from 'zod'
-import { actor } from '../domain/actors'
+import { ACTORS, actor } from '../domain/actors'
 import { deriveCases } from '../domain/caseState'
-import { DAY } from '../domain/clocks'
+import { DAY, HOUR } from '../domain/clocks'
+import { noticesFor } from '../domain/notifications'
 import { seedEvents } from '../domain/seed'
 import { AccessEntrySchema, CaseEventSchema, type AccessEntry, type CaseEvent } from '../domain/types'
 import { StoreContext, type NewEvent, type Store } from './context'
@@ -16,11 +17,16 @@ const SavedSchema = z.object({
   access: z.array(AccessEntrySchema),
   offsetMs: z.number(),
   actorId: z.string(),
+  /** When each person last opened their inbox. */
+  readAt: z.record(z.string(), z.number()).default({}),
 })
 type Saved = z.infer<typeof SavedSchema>
 
 function fresh(actorId = 'w-rivera'): Saved {
-  return { v: 1, events: seedEvents(Date.now()), access: [], offsetMs: 0, actorId }
+  const now = Date.now()
+  // Start everyone as having checked their inbox 12 hours ago, so only recent news is unread.
+  const readAt = Object.fromEntries(ACTORS.map((a) => [a.id, now - 12 * HOUR]))
+  return { v: 1, events: seedEvents(now), access: [], offsetMs: 0, actorId, readAt }
 }
 
 /** Saved demo state is validated, never trusted: anything that does not parse starts over. */
@@ -43,6 +49,7 @@ type Msg =
   | { t: 'actor'; id: string }
   | { t: 'advance'; ms: number }
   | { t: 'reset' }
+  | { t: 'read'; at: number }
 
 function reducer(s: Saved, m: Msg): Saved {
   switch (m.t) {
@@ -56,6 +63,8 @@ function reducer(s: Saved, m: Msg): Saved {
       return { ...s, offsetMs: s.offsetMs + m.ms }
     case 'reset':
       return fresh(s.actorId)
+    case 'read':
+      return { ...s, readAt: { ...s.readAt, [s.actorId]: m.at } }
   }
 }
 
@@ -79,11 +88,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const now = tick + s.offsetMs
   const cases = useMemo(() => deriveCases(s.events), [s.events])
   const byId = useMemo(() => new Map(cases.map((c) => [c.id, c])), [cases])
+  const me = actor(s.actorId)
+  const notices = useMemo(() => noticesFor(me, cases, now), [me, cases, now])
 
   const record = useCallback(
     (e: NewEvent) => {
       const full = { ...e, id: crypto.randomUUID(), at: new Date(Date.now() + s.offsetMs).toISOString(), actorId: s.actorId }
       dispatch({ t: 'append', e: CaseEventSchema.parse(full) })
+      // Move the app clock to now, or the new event looks like it is in the future until the next tick.
+      setTick(Date.now())
     },
     [s.offsetMs, s.actorId],
   )
@@ -101,7 +114,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value: Store = {
     now,
-    me: actor(s.actorId),
+    me,
+    notices,
+    readAt: s.readAt[s.actorId] ?? -Infinity,
+    markRead: () => dispatch({ t: 'read', at: Date.now() + s.offsetMs }),
     cases,
     caseById: (id) => byId.get(id),
     access: s.access,

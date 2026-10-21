@@ -103,6 +103,32 @@ test('skipping a day moves the deadlines', async ({ page }) => {
   await expect(panel(page, 'g-overdue')).toContainText('NC-1037')
 })
 
+test('returned work reaches the caseworker through the inbox, with the reason', async ({ page }) => {
+  await page.goto('/#/')
+  await viewAs(page, 's-brooks')
+  await page.goto('/#/cases/NC-1037')
+  await page.getByLabel('Return with a reason').fill('Add the aunt’s phone number to the plan.')
+  await page.getByRole('button', { name: 'Return', exact: true }).click()
+
+  await viewAs(page, 'w-rivera')
+  const inbox = page.getByRole('link', { name: /Inbox/ })
+  await expect(inbox).toContainText(/\d+ new/)
+  await inbox.click()
+  await expect(page.locator('.notice.unread').first()).toContainText('Lena Brooks returned your safety assessment on NC-1037')
+  await expect(page.locator('.notice.unread').first()).toContainText('aunt’s phone number')
+  await expect(page.getByRole('link', { name: /Inbox/ })).not.toContainText('new') // opening the inbox clears the badge
+})
+
+test('the results page measures deadlines from the case history', async ({ page }) => {
+  await page.goto('/#/')
+  await viewAs(page, 's-brooks')
+  await page.getByRole('link', { name: 'Results' }).click()
+  await expect(page.getByText('Deadlines met on time')).toBeVisible()
+  await page.getByText('Show as a table').click()
+  const row = page.getByRole('row', { name: /Safety assessment/ })
+  await expect(row).toContainText('2') // two missed safety assessments in the demo data
+})
+
 const PAGES: [string, string][] = [
   ['w-rivera', '/#/'],
   ['w-rivera', '/#/cases'],
@@ -110,6 +136,9 @@ const PAGES: [string, string][] = [
   ['s-brooks', '/#/unit'],
   ['s-brooks', '/#/cases/NC-1037'],
   ['s-brooks', '/#/access-log'],
+  ['s-brooks', '/#/results'],
+  ['w-rivera', '/#/inbox'],
+  ['p-nguyen', '/#/inbox'],
   ['p-nguyen', '/#/referrals'],
   ['p-nguyen', '/#/referrals/new'],
   ['p-nguyen', '/#/cases/NC-1030'],

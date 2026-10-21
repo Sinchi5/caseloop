@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { ACTORS, ROLE_LABEL } from '../domain/actors'
 import { formatWhen } from '../domain/format'
+import { unreadCount } from '../domain/notifications'
 import type { Role } from '../domain/types'
 import { useStore } from '../store/context'
 import { REPO_URL, homeFor } from './routes'
@@ -9,6 +10,7 @@ const NAV: Record<Role, { to: string; label: string }[]> = {
   caseworker: [{ to: '/cases', label: 'My cases' }],
   supervisor: [
     { to: '/unit', label: 'Unit overview' },
+    { to: '/results', label: 'Results' },
     { to: '/access-log', label: 'Access log' },
   ],
   police: [
@@ -18,7 +20,8 @@ const NAV: Record<Role, { to: string; label: string }[]> = {
 }
 
 export function Layout() {
-  const { me, now, offsetDays, setActor, advanceDay, reset } = useStore()
+  const { me, now, offsetDays, setActor, advanceDay, reset, notices, readAt } = useStore()
+  const unread = unreadCount(notices, readAt)
   const navigate = useNavigate()
 
   return (
@@ -82,6 +85,15 @@ export function Layout() {
                 {n.label}
               </NavLink>
             ))}
+            <NavLink to="/inbox" end className="inbox-link">
+              Inbox
+              {unread > 0 && (
+                <span className="badge">
+                  {unread}
+                  <span className="sr-only"> new</span>
+                </span>
+              )}
+            </NavLink>
             <NavLink to="/" end>
               About
             </NavLink>

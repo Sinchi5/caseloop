@@ -39,6 +39,11 @@ const PROBLEMS: { problem: string; fix: string; see: string; caseId?: string }[]
     see: 'Any open case → Log a contact',
   },
   {
+    problem: 'Nobody is told anything. People find out by going to look, or not at all.',
+    fix: 'Everyone has an inbox: assigned to you, sent to you, approved, returned with the reason, a deadline coming. It is worked out from the case history, so it can’t miss one.',
+    see: 'Inbox, in the top bar for every role',
+  },
+  {
     problem: 'Workers keep their own lists of due dates because they can’t trust the system.',
     fix: 'The list is the system. Use “Skip ahead 1 day” in the bar above and watch it change.',
     see: 'Demo bar',
@@ -113,7 +118,7 @@ export function Home() {
           <li><strong>As Lena Brooks</strong>, open the unit overview. Assign the new report; approve the safety assessment that has waited two days.</li>
           <li><strong>As Maria Rivera</strong>, your cases are already in order of what’s late. Open the new one and log a home visit.</li>
           <li><strong>Back as Officer Nguyen</strong>, the loop now shows opened, assigned and child seen, with times.</li>
-          <li>Press <strong>Skip ahead 1 day</strong> and watch deadlines move. <strong>As Lena Brooks</strong>, open the Access log to see who looked at what.</li>
+          <li>Press <strong>Skip ahead 1 day</strong> and watch deadlines move and the Inbox fill up. <strong>As Lena Brooks</strong>, open Results to see how the unit is doing, and the Access log to see who looked at what.</li>
         </ol>
       </section>
 
