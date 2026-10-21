@@ -9,6 +9,7 @@ Three kinds of evidence, from cheapest to most convincing: the rules are right (
 | `clocks.test.ts` | Windows match the statute (24 h, 7 d, 60 d) and cite §424(6)(a), §424(3), §424(7); the 30-day review is labelled practice; clocks count from intake; upcoming → due soon → overdue at the right moments (exactly on time is not late); a phone call doesn't start the investigation, a visit does; late completion is *done late*; the clock keeps running while waiting on a supervisor; a returned submission isn't done; notes are owed 5 days after a contact. |
 | `matching.test.ts` | Jaro-Winkler matches Winkler's published reference values; address normalization; birth-date typo detection; **labelled pairs**: every “same person” pair is flagged (spelling variant, moved house, day/month swapped, last-name typo) and no “different person” pair is (sibling, similar name, **twins**). Every match explains itself. |
 | `policy.test.ts` | A caseworker sees only their own cases; a supervisor sees all; an officer sees status only, only for their agency. **The officer's view contains no notes, contacts, risk, history, staff names or outcome**, checked by serializing every view. Assigning from the queue counts as opening. Only the assigned worker can write; nobody writes to a closed case. |
+| `results.test.ts` | Each deadline counted once as on time, late, missed or not yet due; approval waits read from the log (a return and resend are two waits); notes still inside their window are left out of the rate. Inbox: a caseworker hears about returns with the reason; a supervisor hears about new reports (hotline included) and submissions; an officer hears only about their own referrals and nothing that names staff or the outcome; nobody is told about their own action or about anything that hasn't happened yet. |
 | `priority.test.ts` | Every seeded event passes the same schema used to load saved data; each demo case lands in the tier its story says; ordering is missed deadline > risk > next due; reasons are specific (“waiting on supervisor for 2 days”, “overdue by 28 days”). |
 
 ## 2. Flows in a real browser (Playwright + axe, `npm run test:e2e`)
@@ -18,9 +19,11 @@ Runs against the production build, the same files that get deployed.
 - **The whole loop:** an officer fills in and sends a referral → the supervisor sees it as *not opened yet* and assigns it → the caseworker finds it, logs a home visit, and the 24-hour clock shows *Done* → the officer sees *waiting for: safety assessment done*, with no caseworker name or visit details.
 - **Approval reaches the worker:** a supervisor approves from the overview; the worker sees it approved, and the trail records who approved it.
 - **Privacy:** an officer can't see notes or staff names on their own referral, can't open a hotline case at all, and their status check appears in the access log.
+- **Inbox:** a supervisor returns work; the caseworker's inbox shows it as new with the reason, and opening the inbox clears the badge.
+- **Results:** the results page and its table view show the missed safety assessments.
 - **Validation:** an empty referral shows an error summary and marks invalid fields for screen readers.
 - **Time:** *Skip ahead 1 day* moves a case from *due soon* to *overdue*.
-- **Accessibility:** nine pages across all three roles pass axe with WCAG 2.1 A/AA rules.
+- **Accessibility:** twelve pages across all three roles pass axe with WCAG 2.1 A/AA rules.
 - **Phone:** no sideways scrolling on the landing page, the case list or a case page at Pixel 7 size.
 
 ## 3. A caseworker walkthrough (human, ~15 minutes)

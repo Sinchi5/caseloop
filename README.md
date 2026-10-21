@@ -20,6 +20,8 @@ My cousin is a CPS caseworker in New York. I asked him how a case actually moves
 | Attaching a photo takes four steps in two places. | Photos attach to the contact in the same step, from the camera. |
 | Workers keep private lists of due dates. | The list is the system. |
 | The referring officer never hears back. | The officer sees *opened, assigned, child seen, assessed, closed* with times, and never the notes, staff names or outcome. |
+| Nobody is told anything; people have to go look. | Each person has an inbox: assigned to you, sent to you, approved, returned (with the reason), deadline coming, referral not opened. Every notice is derived from the case history and the clock, so it can't fall out of sync. |
+| Nobody can say whether things are getting better. | A results page measures report-to-visit time, deadlines met, approval waits and note lag from the same history, with no extra data entry. |
 
 ## A three-minute tour
 
@@ -27,11 +29,11 @@ My cousin is a CPS caseworker in New York. I asked him how a case actually moves
 2. **Lena Brooks (supervisor)**: assign the new report; approve the safety assessment that has waited two days.
 3. **Maria Rivera (caseworker)**: her cases are in order of what's late. Open the new one and log a home visit.
 4. **Officer Nguyen** again: the loop now shows opened, assigned, child seen.
-5. **Skip ahead 1 day** in the demo bar and watch the deadlines move. As Lena, open the **Access log**.
+5. **Skip ahead 1 day** in the demo bar and watch the deadlines move and the **Inbox** fill up. As Lena, open **Results** and the **Access log**.
 
-| Supervisor | Officer | Phone |
-|---|---|---|
-| ![Unit overview](docs/screenshots/supervisor.png) | ![Officer's referrals](docs/screenshots/officer.png) | ![Caseworker list on a phone](docs/screenshots/phone.png) |
+| Supervisor | Results | Officer | Phone |
+|---|---|---|---|
+| ![Unit overview](docs/screenshots/supervisor.png) | ![Results](docs/screenshots/results.png) | ![Officer's referrals](docs/screenshots/officer.png) | ![Caseworker list on a phone](docs/screenshots/phone.png) |
 
 ## How it's built
 
@@ -44,7 +46,9 @@ My cousin is a CPS caseworker in New York. I asked him how a case actually moves
         ├── computeClocks()        src/domain/clocks.ts      deadlines from NY SSL §424, each with its source
         ├── rankCases()            src/domain/priority.ts    missed deadline > risk > next due, with reasons
         ├── findMatches()          src/domain/matching.ts    Jaro-Winkler + birth-date + address rules, explained
-        └── accessTo() / agencyView()  src/domain/policy.ts  who sees what; the officer's view is built field by field
+        ├── accessTo() / agencyView()  src/domain/policy.ts  who sees what; the officer's view is built field by field
+        ├── noticesFor()           src/domain/notifications.ts  each person's inbox, derived from events + clock
+        └── results()              src/domain/metrics.ts     report-to-visit, deadlines met, approval waits, note lag
         │
         ▼
  React UI                          src/ui/*                  role-specific screens; every case view is access-logged

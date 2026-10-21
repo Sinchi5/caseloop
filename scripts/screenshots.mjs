@@ -9,6 +9,8 @@ const shots = [
   ['supervisor', 's-brooks', '/#/unit', { width: 1280, height: 900 }],
   ['officer', 'p-nguyen', '/#/referrals', { width: 1280, height: 900 }],
   ['matching', 'w-rivera', '/#/cases/NC-1009', { width: 1280, height: 900 }, '#matches'],
+  ['results', 's-brooks', '/#/results', { width: 1280, height: 760 }],
+  ['inbox', 'w-chen', '/#/inbox', { width: 1280, height: 760 }],
   ['phone', 'w-rivera', '/#/cases', { width: 390, height: 844 }],
 ]
 

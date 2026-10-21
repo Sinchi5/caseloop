@@ -61,7 +61,13 @@ The worker sees both records side by side with the reasons, and confirms or reje
 - Child names show as first name + initial in lists; full names only inside the case.
 - The demo stores nothing outside the browser; photos stay in memory and are gone on reload.
 
-### 6. Accessibility and the field
+### 6. Notifications are derived, not stored
+A notice exists because an event happened (assigned, submitted, approved, returned, a step of the loop) or a time passed (a deadline coming due, a referral unopened after 2 hours). `noticesFor(person, cases, now)` computes them; only *when you last opened your inbox* is stored. So a notice can never disagree with the case, there's no “mark as sent” bug, and adding a rule is one function. People are never notified of their own actions. In production the same function would decide what to push by SMS or email.
+
+### 7. Results come from the same history
+`results()` computes median report-to-visit time, the share of deadlines met on time (of those that have come due), supervisor approval waits (read from the log, so a return and resend count as two waits) and note lag. No one enters data to produce them. The chart colors were checked with a color-blindness validator, and *missed* also has stripes, so it never depends on telling red from amber.
+
+### 8. Accessibility and the field
 Status is never shown by color alone (every pill has a word and an icon). All pages pass axe WCAG 2.1 AA in CI. The contact log is designed for a phone in a doorway: four fields, camera capture, under a minute.
 
 ## Data model (abridged)
