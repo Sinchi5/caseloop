@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { CLOCKS, DAY, type ClockResult, type ClockStatus } from '../domain/clocks'
+import { DAY, type ClockResult, type ClockStatus } from '../domain/clocks'
 import { formatRelative, formatSpan, formatWhen } from '../domain/format'
 import { clockLine } from './labels'
 import type { LoopStep } from '../domain/policy'
@@ -102,17 +102,17 @@ export function ClockRows({ clocks, now }: { clocks: ClockResult[]; now: number 
 
 /** A 60-day ruler: where today is against every deadline. */
 export function ClockTrack({ clocks, intakeAt, now }: { clocks: ClockResult[]; intakeAt: number; now: number }) {
-  const span = Math.max(62 * DAY, now - intakeAt + 2 * DAY)
+  const span = Math.max(62 * DAY, now - intakeAt + 2 * DAY, ...clocks.map((k) => k.dueAt - intakeAt + 3 * DAY))
   const pct = (t: number) => `${Math.min(100, Math.max(0, ((t - intakeAt) / span) * 100))}%`
   const day = Math.floor((now - intakeAt) / DAY)
   return (
-    <div className="track" role="img" aria-label={`Day ${day} of the investigation. ${clocks.map((k) => `${k.def.label}: ${STATUS[k.status].label}`).join('. ')}.`}>
+    <div className={`track ${clocks.some((k) => k.def.from === 'indication') ? 'track-tall' : ''}`} role="img" aria-label={`Day ${day} of the case. ${clocks.map((k) => `${k.def.label}: ${STATUS[k.status].label}`).join('. ')}.`}>
       <div className="track-rail" />
       <div className="track-fill" style={{ width: pct(now) }} />
       {clocks.map((k) => (
-        <div key={k.def.id} className={`track-mark st-${k.status} ${k.def.id === 'commence' ? 'tag-up' : ''}`} style={{ left: pct(k.dueAt) }}>
+        <div key={k.def.id} className={`track-mark st-${k.status} ${k.def.id === 'commence' ? 'tag-up' : ''} ${k.def.from === 'indication' ? 'tag-low' : ''}`} style={{ left: pct(k.dueAt) }}>
           <span className="track-dot" />
-          <span className="track-tag">{CLOCKS.find((d) => d.id === k.def.id)!.short}</span>
+          <span className="track-tag">{k.def.short}</span>
         </div>
       ))}
       <div className="track-now" style={{ left: pct(now) }}>

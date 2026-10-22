@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { actorName, caseworkers } from '../domain/actors'
-import { isClosed, matchKey, type CaseState, type Contact } from '../domain/caseState'
+import { indicatedAt, isClosed, matchKey, type CaseState, type Contact } from '../domain/caseState'
+import { ITEM_LABEL, latestHandoff } from '../domain/handoff'
 import { NOTE_SOURCE, NOTE_WINDOW, computeClocks, notesOwed } from '../domain/clocks'
 import { age, formatDay, formatSpan, formatWhen, fullName } from '../domain/format'
 import { findMatches } from '../domain/matching'
@@ -12,7 +13,7 @@ import { REGISTRY } from '../domain/seed'
 import type { ApprovalItem, CaseEvent, ContactKind, Person } from '../domain/types'
 import { photoPreviews } from '../store/photos'
 import { useStore } from '../store/context'
-import { KIND } from './labels'
+import { APPROVAL_ITEMS, KIND, clockLine, itemTitle } from './labels'
 import { ClockRows, ClockTrack, Empty, Icon, LoopSteps, RiskPill, Section, StatusPill, TierPill } from './parts'
 
 export function CaseDetail() {
@@ -97,7 +98,7 @@ function FullCase({ c }: { c: CaseState }) {
         <div key={item} className="banner tone-warn" role="status">
           <Icon name="alert" />
           <p>
-            {actorName(a.decidedBy!)} returned the {item === 'safety' ? 'safety assessment' : 'determination'}{' '}
+            {actorName(a.decidedBy!)} returned the {ITEM_LABEL[item]}{' '}
             {formatSpan(now - a.decidedAt!)} ago: “{a.reason}” {me.role === 'caseworker' && 'Fix it and submit again below.'}
           </p>
         </div>
@@ -105,6 +106,7 @@ function FullCase({ c }: { c: CaseState }) {
 
       <div className="case-grid">
         <div className="case-main">
+          <Handoff c={c} />
           <Section title="Deadlines" id="deadlines">
             <ClockTrack clocks={clocks} intakeAt={c.intakeAt} now={now} />
             <ClockRows clocks={clocks} now={now} />
@@ -153,6 +155,50 @@ function FullCase({ c }: { c: CaseState }) {
         </aside>
       </div>
     </div>
+  )
+}
+
+function Handoff({ c }: { c: CaseState }) {
+  const { me, now } = useStore()
+  const h = latestHandoff(c, now)
+  if (!h || now - h.at > 30 * 86_400_000) return null
+  const mine = me.id === h.toId
+  const items = h.open.length + h.notes.length + h.returned.length
+  return (
+    <section className="section handoff" aria-labelledby="handoff">
+      <div className="section-head">
+        <h2 id="handoff">{mine ? `You took this case over from ${actorName(h.fromId)}` : `Changed hands: ${actorName(h.fromId)} to ${actorName(h.toId)}`}</h2>
+        <span className="muted small">{formatWhen(h.at)} · moved by {actorName(h.byId)}</span>
+      </div>
+      <p className="hint">Everything still open on this case, including what was started before the handoff, so nothing gets missed.</p>
+      {items ? (
+        <ul className="handoff-list">
+          {h.open.map((k) => (
+            <li key={k.def.id}>
+              <StatusPill status={k.awaitingApprovalSince !== undefined && k.status !== 'overdue' ? 'awaiting' : k.status} />
+              <span><strong>{k.def.label}</strong>: {clockLine(k, now)}</span>
+            </li>
+          ))}
+          {h.notes.map((n) => (
+            <li key={n.contact.id}>
+              <StatusPill status={n.status} />
+              <span>
+                <strong>Note owed</strong> for the {KIND[n.contact.kind].toLowerCase()} with {n.contact.with} on {formatDay(n.contact.contactAt)}, logged by{' '}
+                {actorName(n.contact.loggedBy)}. <Link to={`/cases/${c.id}#contact-${n.contact.id}`}>Write it</Link>
+              </span>
+            </li>
+          ))}
+          {h.returned.map((r) => (
+            <li key={r.item}>
+              <StatusPill status="due-soon" />
+              <span><strong>{itemTitle(r.item)} returned</strong>{r.reason ? `: “${r.reason}”` : ''}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Empty>Nothing open. The case came over clean.</Empty>
+      )}
+    </section>
   )
 }
 
@@ -401,8 +447,8 @@ function Actions({ c }: { c: CaseState }) {
     )
   }
 
-  const pending = (['safety', 'determination'] as const).filter((i) => c.approvals[i]?.status === 'pending')
-  const itemName = (i: ApprovalItem) => (i === 'safety' ? 'Safety assessment' : 'Determination')
+  const pending = APPROVAL_ITEMS.filter((i) => c.approvals[i]?.status === 'pending')
+  const itemName = itemTitle
 
   if (me.role === 'supervisor') {
     return (
@@ -473,7 +519,14 @@ function Actions({ c }: { c: CaseState }) {
   if (!can(me, 'submit', c)) return null
   return (
     <Section title="Send to supervisor" id="actions">
-      {(['safety', 'determination'] as const).map((i) => <SubmitItem key={i} c={c} item={i} />)}
+      {indicatedAt(c) !== undefined && (
+        <p className="small">
+          Indicated and open for services. The FASP deadlines count from {formatDay(indicatedAt(c)!)}.
+        </p>
+      )}
+      {(indicatedAt(c) !== undefined ? APPROVAL_ITEMS : APPROVAL_ITEMS.slice(0, 2)).map((i) => (
+        <SubmitItem key={i} c={c} item={i} />
+      ))}
     </Section>
   )
 }
@@ -483,7 +536,7 @@ function SubmitItem({ c, item }: { c: CaseState; item: ApprovalItem }) {
   const [summary, setSummary] = useState('')
   const [outcome, setOutcome] = useState<'indicated' | 'unfounded'>('unfounded')
   const a = c.approvals[item]
-  const name = item === 'safety' ? 'Safety assessment' : 'Determination'
+  const name = itemTitle(item)
 
   if (a?.status === 'approved') return <p className="muted small"><Icon name="check" size={13} /> {name} approved {formatDay(a.decidedAt!)}.</p>
   if (a?.status === 'pending')
@@ -495,6 +548,8 @@ function SubmitItem({ c, item }: { c: CaseState; item: ApprovalItem }) {
     )
   if (item === 'determination' && c.approvals.safety?.status !== 'approved')
     return <p className="muted small">Determination: available once the safety assessment is approved.</p>
+  if (item === 'fasp-comprehensive' && c.approvals['fasp-initial']?.status !== 'approved')
+    return <p className="muted small">Comprehensive FASP: available once the Initial FASP is approved.</p>
 
   return (
     <form
@@ -509,7 +564,7 @@ function SubmitItem({ c, item }: { c: CaseState; item: ApprovalItem }) {
       <label>
         {name}
         {a?.status === 'returned' && <span className="muted"> (returned, send again)</span>}
-        <textarea rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder={item === 'safety' ? 'Safe / safe with a plan / unsafe, and why' : 'Summary of findings'} />
+        <textarea rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder={item === 'safety' ? 'Safe / safe with a plan / unsafe, and why' : item === 'determination' ? 'Summary of findings' : 'Family strengths, needs, and the services agreed with the family'} />
       </label>
       {item === 'determination' && (
         <fieldset className="radios">
@@ -533,11 +588,11 @@ const VERB: Record<CaseEvent['type'], (e: CaseEvent) => string> = {
     return `logged a ${KIND[x.kind].toLowerCase()} with ${x.with}${x.photos.length ? ` (${x.photos.length} photo${x.photos.length > 1 ? 's' : ''})` : ''}`
   },
   NOTE_WRITTEN: () => 'wrote a contact note',
-  SUBMITTED: (e) => `sent the ${(e as Extract<CaseEvent, { type: 'SUBMITTED' }>).item === 'safety' ? 'safety assessment' : 'determination'} for approval`,
-  APPROVED: (e) => `approved the ${(e as Extract<CaseEvent, { type: 'APPROVED' }>).item === 'safety' ? 'safety assessment' : 'determination'}`,
+  SUBMITTED: (e) => `sent the ${ITEM_LABEL[(e as Extract<CaseEvent, { type: 'SUBMITTED' }>).item]} for approval`,
+  APPROVED: (e) => `approved the ${ITEM_LABEL[(e as Extract<CaseEvent, { type: 'APPROVED' }>).item]}`,
   RETURNED: (e) => {
     const x = e as Extract<CaseEvent, { type: 'RETURNED' }>
-    return `returned the ${x.item === 'safety' ? 'safety assessment' : 'determination'}: “${x.reason}”`
+    return `returned the ${ITEM_LABEL[x.item]}: “${x.reason}”`
   },
   REVIEW_COMPLETED: () => 'completed the 30-day review',
   MATCH_DECIDED: (e) => `marked a possible earlier record as ${(e as Extract<CaseEvent, { type: 'MATCH_DECIDED' }>).decision === 'same' ? 'the same person' : 'a different person'}`,

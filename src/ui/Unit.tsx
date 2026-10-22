@@ -8,7 +8,7 @@ import { rankCases } from '../domain/priority'
 import { useStore } from '../store/context'
 import { homeFor } from './routes'
 import { CaseCard, Stat } from './MyCases'
-import { clockLine } from './labels'
+import { APPROVAL_ITEMS, clockLine, itemTitle } from './labels'
 import { Empty, Icon, RiskPill, Section, StatusPill } from './parts'
 
 export function Unit() {
@@ -20,7 +20,7 @@ export function Unit() {
   const unassigned = open.filter((r) => !r.c.assignedTo)
   const approvals = cases
     .flatMap((c) =>
-      (['safety', 'determination'] as const)
+      APPROVAL_ITEMS
         .filter((i) => c.approvals[i]?.status === 'pending')
         .map((i) => ({ c, i, a: c.approvals[i]! })),
     )
@@ -74,7 +74,7 @@ export function Unit() {
                 return (
                   <li key={c.id + i} className="row stack">
                     <div className="row-main">
-                      <Link to={`/cases/${c.id}`}><strong>{c.id}</strong></Link> · {i === 'safety' ? 'Safety assessment' : 'Determination'} from{' '}
+                      <Link to={`/cases/${c.id}`}><strong>{c.id}</strong></Link> · {itemTitle(i)} from{' '}
                       {actorName(a.submittedBy)}
                       <div className="muted small">
                         Waiting {formatSpan(now - a.submittedAt)} · {clockLine(k, now)}

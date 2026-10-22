@@ -39,6 +39,12 @@ const PROBLEMS: { problem: string; fix: string; see: string; caseId?: string }[]
     see: 'Any open case → Log a contact',
   },
   {
+    problem: 'A worker inherits a case and doesn’t know what the last worker left due. (Added after a caseworker tried the first version and said this had just happened to him with a FASP.)',
+    fix: 'When a case changes hands, the new worker gets an inbox message and a handoff panel with everything still open: deadlines, including the Initial and Comprehensive FASP once a case is indicated, notes owed and returned work.',
+    see: 'NC-0951, moved to Maria Rivera this morning',
+    caseId: 'NC-0951',
+  },
+  {
     problem: 'Nobody is told anything. People find out by going to look, or not at all.',
     fix: 'Everyone has an inbox: assigned to you, sent to you, approved, returned with the reason, a deadline coming. It is worked out from the case history, so it can’t miss one.',
     see: 'Inbox, in the top bar for every role',

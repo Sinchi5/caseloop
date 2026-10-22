@@ -230,6 +230,9 @@ details.closed summary { cursor: pointer; padding: 6px 0; }
 .track-mark.st-due-soon .track-dot { border-color: var(--warn); }
 .track-tag { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
 .track-mark.tag-up { flex-direction: column-reverse; top: -9px; }
+/* FASP deadlines get their own row of labels, below the investigation's. */
+.track.track-tall { height: 70px; }
+.track-mark.tag-low .track-tag { margin-top: 16px; }
 .track-now { position: absolute; top: 0; height: 32px; border-left: 2px solid var(--ink); }
 .track-now span { position: absolute; top: -4px; left: 6px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
 
@@ -342,6 +345,14 @@ input[type='checkbox'], input[type='radio'] { width: 18px; height: 18px; accent-
 .num { text-align: right !important; }
 .cell-bad { color: var(--bad); font-weight: 700; }
 .cell-warn { color: var(--warn); font-weight: 700; }
+
+/* ---------- Handoff ---------- */
+.section.handoff { border-left: 4px solid var(--info); }
+.handoff-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.handoff-list li { display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: start; padding: 8px 0; border-top: 1px solid var(--line); font-size: 0.93rem; }
+.handoff-list li:first-child { border-top: 0; }
+.handoff-list .pill { justify-self: start; }
+@media (max-width: 640px) { .handoff-list li { grid-template-columns: 1fr; gap: 4px; } }
 
 /* ---------- Inbox ---------- */
 .inbox-link { display: inline-flex; align-items: center; gap: 6px; }

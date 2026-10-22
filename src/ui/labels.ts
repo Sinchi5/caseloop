@@ -1,5 +1,11 @@
 import { formatDay, formatRelative, formatSpan, formatWhen } from '../domain/format'
 import type { ClockResult } from '../domain/clocks'
+import { ITEM_LABEL } from '../domain/handoff'
+import type { ApprovalItem } from '../domain/types'
+
+export const APPROVAL_ITEMS: readonly ApprovalItem[] = ['safety', 'determination', 'fasp-initial', 'fasp-comprehensive']
+/** "Safety assessment", "Initial FASP": for the start of a sentence. */
+export const itemTitle = (i: ApprovalItem) => ITEM_LABEL[i][0].toUpperCase() + ITEM_LABEL[i].slice(1)
 
 export const KIND = { 'home-visit': 'Home visit', 'school-visit': 'School visit', phone: 'Phone call', collateral: 'Collateral contact' } as const
 

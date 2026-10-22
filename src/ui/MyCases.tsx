@@ -5,6 +5,8 @@ import { rankCases, type Ranked, type Tier } from '../domain/priority'
 import { useStore } from '../store/context'
 import { homeFor } from './routes'
 import { KIND, clockLine } from './labels'
+import { ITEM_LABEL } from '../domain/handoff'
+import type { ApprovalItem } from '../domain/types'
 import { Empty, Icon, RiskPill, Section, StatusPill, TierPill } from './parts'
 
 export function CaseCard({ r, now, showWorker }: { r: Ranked; now: number; showWorker?: string }) {
@@ -31,7 +33,7 @@ export function CaseCard({ r, now, showWorker }: { r: Ranked; now: number; showW
           </ul>
         ) : next ? (
           <p className="next-line">
-            Next: {next.def.label.toLowerCase()}. {clockLine(next, now)}
+            Next: {next.def.label}. {clockLine(next, now)}
           </p>
         ) : (
           <p className="next-line">Closed {formatDay(c.approvals.determination!.decidedAt!)}</p>
@@ -98,7 +100,7 @@ export function MyCases() {
           <div>
             {returned.map(({ c, item, a }) => (
               <p key={c.id + item}>
-                <Link to={`/cases/${c.id}`}>{c.id}</Link>: your {item === 'safety' ? 'safety assessment' : 'determination'} was returned{' '}
+                <Link to={`/cases/${c.id}`}>{c.id}</Link>: your {ITEM_LABEL[item as ApprovalItem]} was returned{' '}
                 {formatSpan(now - a.decidedAt!)} ago. “{a.reason}”
               </p>
             ))}
