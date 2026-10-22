@@ -6,6 +6,10 @@
 
 ![A caseworker's case page: four legal deadlines with their sources, a safety assessment waiting on the supervisor, and what the referring police department can see](docs/screenshots/case.png)
 
+**New, from caseworker feedback:** when a case changes hands, the new worker sees everything still open, including FASP deadlines once a case is indicated.
+
+![The handoff panel: a case moved from James Chen to Maria Rivera, with the Initial FASP due in 2 days and a note the previous worker never typed up](docs/screenshots/handoff.png)
+
 ## Why this exists
 
 My cousin is a CPS caseworker in New York. I asked him how a case actually moves, from the State Central Register report to the day it closes, and where things fall through the cracks. He described seven problems. CaseLoop is a working answer to each of them, plus the one that sits between agencies: the officer who made the report never learns whether anyone acted on it.
@@ -20,6 +24,7 @@ My cousin is a CPS caseworker in New York. I asked him how a case actually moves
 | Attaching a photo takes four steps in two places. | Photos attach to the contact in the same step, from the camera. |
 | Workers keep private lists of due dates. | The list is the system. |
 | The referring officer never hears back. | The officer sees *opened, assigned, child seen, assessed, closed* with times, and never the notes, staff names or outcome. |
+| A worker inherits a case and doesn't know what the last worker left due. *Added the day after the caseworker tried the first version: he had just inherited a case with a FASP due that nobody told him about.* | When a case changes hands, the new worker gets an inbox message and a handoff panel listing everything still open: deadlines (including the Initial FASP, 7 days from indication, and the Comprehensive FASP, 90 days), notes the previous worker never typed up, and returned work. Indicated cases now stay open for services instead of closing. |
 | Nobody is told anything; people have to go look. | Each person has an inbox: assigned to you, sent to you, approved, returned (with the reason), deadline coming, referral not opened. Every notice is derived from the case history and the clock, so it can't fall out of sync. |
 | Nobody can say whether things are getting better. | A results page measures report-to-visit time, deadlines met, approval waits and note lag from the same history, with no extra data entry. |
 
@@ -48,6 +53,7 @@ My cousin is a CPS caseworker in New York. I asked him how a case actually moves
         ├── findMatches()          src/domain/matching.ts    Jaro-Winkler + birth-date + address rules, explained
         ├── accessTo() / agencyView()  src/domain/policy.ts  who sees what; the officer's view is built field by field
         ├── noticesFor()           src/domain/notifications.ts  each person's inbox, derived from events + clock
+        ├── latestHandoff()        src/domain/handoff.ts     what a worker inherits when a case changes hands
         └── results()              src/domain/metrics.ts     report-to-visit, deadlines met, approval waits, note lag
         │
         ▼

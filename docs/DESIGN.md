@@ -67,7 +67,13 @@ A notice exists because an event happened (assigned, submitted, approved, return
 ### 7. Results come from the same history
 `results()` computes median report-to-visit time, the share of deadlines met on time (of those that have come due), supervisor approval waits (read from the log, so a return and resend count as two waits) and note lag. No one enters data to produce them. The chart colors were checked with a color-blindness validator, and *missed* also has stripes, so it never depends on telling red from amber.
 
-### 8. Accessibility and the field
+### 8. Handoffs and the FASP (added from caseworker feedback, 21 Oct 2026)
+After trying the first version, the caseworker said he had just inherited a case with a FASP due that nobody told him about. Two changes:
+
+- **Indicated cases stay open for services.** Before, any approved determination closed the case. Now only *unfounded* closes it; *indicated* starts the FASP clocks: the **Initial FASP within 7 days of the date of indication** and the **Comprehensive FASP within 90 days of the case initiation date**, both from the OCFS CPS Program Manual, ch. 8 (2025), citing 18 NYCRR 428.3(f). *Simplification:* the prototype uses the date of indication as the case initiation date. *Left out on purpose:* reassessment intervals, because published sources disagree (7 months vs 210 days). Those need confirming with OCFS before they become a deadline anyone relies on.
+- **A handoff is a first-class event.** Every assignment is kept in order, so “changed hands” is a fact, not a guess. `latestHandoff()` lists what the new worker inherits from the case as it stands: open deadlines, notes the previous worker logged but never typed, returned and pending submissions. The new worker sees it in the inbox (“moved to you from James Chen. Open now: Initial FASP due Sat · 1 note owed”) and at the top of the case. Reassigning to the same person is a no-op.
+
+### 9. Accessibility and the field
 Status is never shown by color alone (every pill has a word and an icon). All pages pass axe WCAG 2.1 AA in CI. The contact log is designed for a phone in a doorway: four fields, camera capture, under a minute.
 
 ## Data model (abridged)
