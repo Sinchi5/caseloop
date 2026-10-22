@@ -69,7 +69,7 @@ export type Referral = z.infer<typeof ReferralSchema>
 export const ContactKindSchema = z.enum(['home-visit', 'school-visit', 'phone', 'collateral'])
 export type ContactKind = z.infer<typeof ContactKindSchema>
 
-export const ApprovalItemSchema = z.enum(['safety', 'determination'])
+export const ApprovalItemSchema = z.enum(['safety', 'determination', 'fasp-initial', 'fasp-comprehensive'])
 export type ApprovalItem = z.infer<typeof ApprovalItemSchema>
 
 const base = {

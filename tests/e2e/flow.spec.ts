@@ -129,10 +129,38 @@ test('the results page measures deadlines from the case history', async ({ page 
   await expect(row).toContainText('2') // two missed safety assessments in the demo data
 })
 
+test('a reassigned case arrives with everything that is still open', async ({ page }) => {
+  await page.goto('/#/')
+  await viewAs(page, 's-brooks')
+  await page.goto('/#/cases/NC-1033')
+  await page.getByLabel('Reassign to').selectOption('w-okafor')
+  await page.getByRole('button', { name: 'Reassign' }).click()
+
+  await viewAs(page, 'w-okafor')
+  await page.getByRole('link', { name: /Inbox/ }).click()
+  await expect(page.locator('.notice.unread').first()).toContainText('Lena Brooks moved NC-1033 (Destiny W.) to you from Maria Rivera. Open now: 1 overdue (Safety assessment and preliminary report)')
+
+  await page.locator('.notice.unread').first().click()
+  const handoff = page.locator('section.handoff')
+  await expect(handoff.getByRole('heading')).toHaveText('You took this case over from Maria Rivera')
+  await expect(handoff).toContainText('Safety assessment and preliminary report')
+  await expect(handoff).toContainText('Overdue')
+})
+
+test('an indicated case stays open for its FASP, and the new worker can send it', async ({ page }) => {
+  await page.goto('/#/cases/NC-0951') // Maria Rivera, who just inherited it
+  await expect(page.locator('section.handoff')).toContainText('Initial FASP')
+  await expect(page.locator('section.handoff')).toContainText('logged by James Chen')
+  await page.getByRole('textbox', { name: 'Initial FASP' }).fill('Plan agreed with Denise: outpatient program, food pantry, weekly visits.')
+  await page.getByRole('button', { name: 'Send for approval' }).click()
+  await expect(page.getByText(/Initial FASP sent .* ago/)).toBeVisible()
+})
+
 const PAGES: [string, string][] = [
   ['w-rivera', '/#/'],
   ['w-rivera', '/#/cases'],
   ['w-rivera', '/#/cases/NC-1009'],
+  ['w-rivera', '/#/cases/NC-0951'],
   ['s-brooks', '/#/unit'],
   ['s-brooks', '/#/cases/NC-1037'],
   ['s-brooks', '/#/access-log'],

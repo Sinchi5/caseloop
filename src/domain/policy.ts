@@ -1,5 +1,5 @@
-import { firstFaceToFace, firstSeenByCps, isClosed, type CaseState } from './caseState'
-import { actor, isCps } from './actors'
+import { firstFaceToFace, firstSeenByCps, investigationClosedAt, isClosed, type CaseState } from './caseState'
+import { actorName, isCps } from './actors'
 import { shortName } from './format'
 import type { Actor } from './types'
 
@@ -73,7 +73,7 @@ export function agencyView(c: CaseState): AgencyView {
   return {
     caseId: c.id,
     sentAt: c.intakeAt,
-    sentBy: actor(c.submittedBy).name,
+    sentBy: actorName(c.submittedBy),
     children: c.referral.children.map(shortName),
     steps: [
       { id: 'sent', label: 'Sent to CPS', at: c.intakeAt },
@@ -85,7 +85,7 @@ export function agencyView(c: CaseState): AgencyView {
         label: 'Safety assessment done',
         at: c.approvals.safety?.status === 'approved' ? c.approvals.safety.decidedAt : undefined,
       },
-      { id: 'closed', label: 'Investigation closed', at: isClosed(c) ? c.approvals.determination?.decidedAt : undefined },
+      { id: 'closed', label: 'Investigation closed', at: investigationClosedAt(c) },
     ],
   }
 }

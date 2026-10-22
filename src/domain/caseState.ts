@@ -31,6 +31,8 @@ export interface CaseState {
   /** First time each actor opened the case. Read receipts for the closed loop. */
   seenBy: Record<string, number>
   assignedTo?: { workerId: string; at: number; by: string }
+  /** Every assignment in order; more than one means the case changed hands. */
+  assignments: { workerId: string; at: number; by: string }[]
   contacts: Contact[]
   approvals: Partial<Record<ApprovalItem, Approval>>
   reviewCompletedAt?: number
@@ -52,6 +54,7 @@ export function applyEvent(state: CaseState | undefined, e: CaseEvent): CaseStat
       intakeAt: ms(e.at),
       submittedBy: e.actorId,
       seenBy: {},
+      assignments: [],
       contacts: [],
       approvals: {},
       matchDecisions: {},
@@ -67,7 +70,9 @@ export function applyEvent(state: CaseState | undefined, e: CaseEvent): CaseStat
       s.seenBy = { ...s.seenBy, [e.actorId]: ms(e.at) }
       return s
     case 'ASSIGNED':
+      if (s.assignedTo?.workerId === e.workerId) return state
       s.assignedTo = { workerId: e.workerId, at: ms(e.at), by: e.actorId }
+      s.assignments = [...s.assignments, s.assignedTo]
       return s
     case 'CONTACT_LOGGED':
       s.contacts = [
@@ -148,8 +153,20 @@ export function firstFaceToFace(c: CaseState): Contact | undefined {
     .sort((a, b) => a.contactAt - b.contactAt)[0]
 }
 
+/** The investigation ends when the determination is approved, whatever it found. */
+export function investigationClosedAt(c: CaseState): number | undefined {
+  const d = c.approvals.determination
+  return d?.status === 'approved' ? d.decidedAt : undefined
+}
+
+/** An indicated case stays open for services (and FASP deadlines); an unfounded one closes. */
+export function indicatedAt(c: CaseState): number | undefined {
+  const d = c.approvals.determination
+  return d?.status === 'approved' && d.outcome === 'indicated' ? d.decidedAt : undefined
+}
+
 export function isClosed(c: CaseState): boolean {
-  return c.approvals.determination?.status === 'approved'
+  return investigationClosedAt(c) !== undefined && indicatedAt(c) === undefined
 }
 
 /**

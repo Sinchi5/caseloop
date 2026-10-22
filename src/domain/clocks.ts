@@ -1,9 +1,9 @@
-import { firstFaceToFace, type CaseState, type Contact } from './caseState'
+import { firstFaceToFace, indicatedAt, investigationClosedAt, type CaseState, type Contact } from './caseState'
 
 export const HOUR = 3_600_000
 export const DAY = 24 * HOUR
 
-export type ClockId = 'commence' | 'safety' | 'midpoint' | 'determination'
+export type ClockId = 'commence' | 'safety' | 'midpoint' | 'determination' | 'fasp-initial' | 'fasp-comprehensive'
 
 export interface Source {
   kind: 'law' | 'practice'
@@ -19,9 +19,12 @@ export interface ClockDef {
   /** How long before the due time a clock turns "due soon". */
   warn: number
   source: Source
+  /** What the window counts from: the report, or the date the case was indicated. */
+  from: 'intake' | 'indication'
 }
 
 const SSL_424 = 'https://www.nysenate.gov/legislation/laws/SOS/424'
+const CPS_MANUAL_CH8 = 'https://ocfs.ny.gov/programs/cps/manual/2025/2025-CPS-Manual-Ch08.pdf'
 
 export const CLOCKS: readonly ClockDef[] = [
   {
@@ -31,6 +34,7 @@ export const CLOCKS: readonly ClockDef[] = [
     window: 24 * HOUR,
     warn: 6 * HOUR,
     source: { kind: 'law', cite: 'NY Social Services Law §424(6)(a)', url: SSL_424 },
+    from: 'intake',
   },
   {
     id: 'safety',
@@ -39,6 +43,7 @@ export const CLOCKS: readonly ClockDef[] = [
     window: 7 * DAY,
     warn: 2 * DAY,
     source: { kind: 'law', cite: 'NY Social Services Law §424(3)', url: SSL_424 },
+    from: 'intake',
   },
   {
     id: 'midpoint',
@@ -47,6 +52,7 @@ export const CLOCKS: readonly ClockDef[] = [
     window: 30 * DAY,
     warn: 3 * DAY,
     source: { kind: 'practice', cite: 'Office practice, from a caseworker interview' },
+    from: 'intake',
   },
   {
     id: 'determination',
@@ -55,6 +61,36 @@ export const CLOCKS: readonly ClockDef[] = [
     window: 60 * DAY,
     warn: 7 * DAY,
     source: { kind: 'law', cite: 'NY Social Services Law §424(7)', url: SSL_424 },
+    from: 'intake',
+  },
+]
+
+/**
+ * Once a case is indicated and stays open for services, the family assessment and service
+ * plan (FASP) clocks start. From the OCFS CPS Program Manual, ch. 8 (2025): the Initial FASP
+ * within 7 days of the date of indication; the Comprehensive FASP within 90 days of the case
+ * initiation date (18 NYCRR 428.3(f)). Simplification: the prototype treats the date of
+ * indication as the case initiation date. Reassessment intervals are left out on purpose:
+ * published sources disagree (7 months vs 210 days), so they need confirming with OCFS first.
+ */
+export const FASP_CLOCKS: readonly ClockDef[] = [
+  {
+    id: 'fasp-initial',
+    label: 'Initial FASP',
+    short: 'FASP 7 d',
+    window: 7 * DAY,
+    warn: 2 * DAY,
+    source: { kind: 'law', cite: 'OCFS CPS Program Manual ch. 8: within 7 days of indication', url: CPS_MANUAL_CH8 },
+    from: 'indication',
+  },
+  {
+    id: 'fasp-comprehensive',
+    label: 'Comprehensive FASP',
+    short: 'FASP 90 d',
+    window: 90 * DAY,
+    warn: 10 * DAY,
+    source: { kind: 'law', cite: '18 NYCRR 428.3(f): within 90 days of case initiation', url: CPS_MANUAL_CH8 },
+    from: 'indication',
   },
 ]
 
@@ -88,7 +124,9 @@ function completion(c: CaseState, id: ClockId): { at?: number; pendingSince?: nu
     case 'midpoint':
       return { at: c.reviewCompletedAt }
     case 'safety':
-    case 'determination': {
+    case 'determination':
+    case 'fasp-initial':
+    case 'fasp-comprehensive': {
       const a = c.approvals[id]
       if (!a) return {}
       if (a.status === 'approved') return { at: a.decidedAt }
@@ -99,12 +137,15 @@ function completion(c: CaseState, id: ClockId): { at?: number; pendingSince?: nu
 }
 
 export function computeClocks(c: CaseState, now: number): ClockResult[] {
-  const closed = c.approvals.determination?.status === 'approved'
-  return CLOCKS.map((def) => {
-    const dueAt = c.intakeAt + def.window
+  const investigationDone = investigationClosedAt(c)
+  const indicated = indicatedAt(c)
+  const defs = indicated === undefined ? CLOCKS : [...CLOCKS, ...FASP_CLOCKS]
+  return defs.map((def) => {
+    const base = def.from === 'indication' ? indicated! : c.intakeAt
+    const dueAt = base + def.window
     const { at, pendingSince } = completion(c, def.id)
-    // A 30-day review that never happened stops mattering once the case is closed.
-    const completedAt = at ?? (closed && def.id === 'midpoint' ? c.approvals.determination?.decidedAt : undefined)
+    // A 30-day review that never happened stops mattering once the investigation is over.
+    const completedAt = at ?? (def.id === 'midpoint' ? investigationDone : undefined)
     return {
       def,
       dueAt,

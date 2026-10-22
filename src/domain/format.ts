@@ -2,10 +2,13 @@ const MIN = 60_000
 const HOUR = 60 * MIN
 const DAY = 24 * HOUR
 
-/** "3 days", "5 h", "20 min". Rounded down, so "overdue by 1 day" means at least a full day. */
+/**
+ * "3 days", "5 h", "20 min". Days round to the nearest whole day from a day and a half up, so
+ * 47 hours reads "2 days", not "1 day"; under that, a full day or more reads "1 day".
+ */
 export function formatSpan(ms: number): string {
   const a = Math.abs(ms)
-  if (a >= 2 * DAY) return `${Math.floor(a / DAY)} days`
+  if (a >= 1.5 * DAY) return `${Math.round(a / DAY)} days`
   if (a >= DAY) return '1 day'
   if (a >= HOUR) return `${Math.floor(a / HOUR)} h`
   return `${Math.max(1, Math.floor(a / MIN))} min`

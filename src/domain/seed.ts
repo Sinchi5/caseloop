@@ -204,6 +204,29 @@ export function seedEvents(now: number): CaseEvent[] {
   push('NC-0970', 16 * 24, 'w-rivera', { type: 'SUBMITTED', item: 'determination', outcome: 'unfounded', summary: 'Isolated lapse, no ongoing risk.' })
   push('NC-0970', 15 * 24, 's-brooks', { type: 'APPROVED', item: 'determination' })
 
+  // NC-0951 — the case from the caseworker's follow-up: indicated five days ago, reassigned this
+  // morning. The Initial FASP is due in two days and the previous worker left a visit with no
+  // typed note. The new worker has to learn all of that the moment the case is theirs.
+  referral('NC-0951', 50 * 24, HOTLINE, {
+    address: '27 Willow Court',
+    children: [{ firstName: 'Kai', lastName: 'Robinson', dob: '2019-03-15' }],
+    caregivers: [{ firstName: 'Denise', lastName: 'Robinson', dob: '1990-12-03' }],
+    risk: ['substance-use', 'prior-calls'],
+    narrative: 'Teacher reports Kai often arrives hungry and says his mom "sleeps all day". Two earlier police wellness checks at the address.',
+  })
+  push('NC-0951', 50 * 24 - 1, 's-brooks', { type: 'SEEN' })
+  push('NC-0951', 50 * 24 - 2, 's-brooks', { type: 'ASSIGNED', workerId: 'w-chen' })
+  push('NC-0951', 50 * 24 - 3, 'w-chen', { type: 'SEEN' })
+  contact('NC-0951', 49 * 24 + 12, 'w-chen', 'NC-0951-k1', 'home-visit', 'Kai and mother', 'Little food in the home; mother says she is "getting help".')
+  note('NC-0951', 48 * 24, 'w-chen', 'NC-0951-k1', 'Home visit. Refrigerator nearly empty, mother drowsy but responsive. Kai talkative, no injuries. Referred to food pantry; mother agreed to an assessment.')
+  push('NC-0951', 46 * 24, 'w-chen', { type: 'SUBMITTED', item: 'safety', summary: 'Safe with a plan: grandmother bringing groceries, daily check-ins.' })
+  push('NC-0951', 45 * 24, 's-brooks', { type: 'APPROVED', item: 'safety' })
+  push('NC-0951', 21 * 24, 's-brooks', { type: 'REVIEW_COMPLETED' })
+  push('NC-0951', 6 * 24, 'w-chen', { type: 'SUBMITTED', item: 'determination', outcome: 'indicated', summary: 'Inadequate guardianship (food, supervision). Case to stay open for services.' })
+  push('NC-0951', 5 * 24, 's-brooks', { type: 'APPROVED', item: 'determination' })
+  contact('NC-0951', 3 * 24, 'w-chen', 'NC-0951-k2', 'home-visit', 'Kai and mother', 'Mother started an outpatient program on Monday.')
+  push('NC-0951', 6, 's-brooks', { type: 'ASSIGNED', workerId: 'w-rivera' })
+
   // NC-1040 — another agency's referral, on track. Northfield officers must not see it.
   referral('NC-1040', 2 * 24, KPD, {
     address: '12 Quarry Road',

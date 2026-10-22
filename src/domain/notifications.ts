@@ -2,6 +2,7 @@ import { actorName } from './actors'
 import { isClosed, type CaseState } from './caseState'
 import { HOUR, NOTE_WARN, computeClocks, notesOwed } from './clocks'
 import { formatWhen, shortName } from './format'
+import { ITEM_LABEL, handoffSummary, latestHandoff } from './handoff'
 import { accessTo, agencyView } from './policy'
 import { RISK_RANK, riskLevel } from './risk'
 import type { Actor, ApprovalItem } from './types'
@@ -17,7 +18,7 @@ export interface Notice {
 /** CPS should open a police referral within this long, or the officer is told. */
 export const OPEN_ALERT_AFTER = 2 * HOUR
 
-const itemName = (i: ApprovalItem) => (i === 'safety' ? 'safety assessment' : 'determination')
+const itemName = (i: ApprovalItem) => ITEM_LABEL[i]
 const kids = (c: CaseState) => c.referral.children.map(shortName).join(', ')
 
 /**
@@ -50,8 +51,13 @@ export function noticesFor(me: Actor, cases: CaseState[], now: number): Notice[]
       const at = Date.parse(e.at)
       const id = `${c.id}:${e.id}`
       if (me.role === 'caseworker') {
-        if (e.type === 'ASSIGNED' && e.workerId === me.id)
-          add({ id, at, caseId: c.id, tone: 'info', text: `${actorName(e.actorId)} assigned you ${c.id} (${kids(c)})` })
+        if (e.type === 'ASSIGNED' && e.workerId === me.id) {
+          const h = latestHandoff(c, now)
+          // A reassignment says what the case comes with, so nothing the last worker left is missed.
+          if (h && h.toId === me.id && h.at === at)
+            add({ id, at, caseId: c.id, tone: h.open.some((k) => k.dueAt < now) || h.notes.length ? 'warn' : 'info', text: `${actorName(e.actorId)} moved ${c.id} (${kids(c)}) to you from ${actorName(h.fromId)}. Open now: ${handoffSummary(h, now)}` })
+          else add({ id, at, caseId: c.id, tone: 'info', text: `${actorName(e.actorId)} assigned you ${c.id} (${kids(c)})` })
+        }
         if (e.type === 'APPROVED')
           add({ id, at, caseId: c.id, tone: 'good', text: `${actorName(e.actorId)} approved your ${itemName(e.item)} on ${c.id}` })
         if (e.type === 'RETURNED')
@@ -80,9 +86,9 @@ export function noticesFor(me: Actor, cases: CaseState[], now: number): Notice[]
           : (k.def.id === 'commence' && !c.assignedTo) || k.def.id === 'midpoint'
       const soonAt = Math.max(k.dueAt - k.def.warn, c.assignedTo?.at ?? c.intakeAt)
       if (mine && !k.awaitingApprovalSince)
-        add({ id: `${c.id}:${k.def.id}:soon`, at: soonAt, caseId: c.id, tone: 'warn', text: `${c.id}: ${k.def.label.toLowerCase()} due ${formatWhen(k.dueAt)}` })
+        add({ id: `${c.id}:${k.def.id}:soon`, at: soonAt, caseId: c.id, tone: 'warn', text: `${c.id}: ${k.def.label} due ${formatWhen(k.dueAt)}` })
       if (mine || me.role === 'supervisor')
-        add({ id: `${c.id}:${k.def.id}:overdue`, at: k.dueAt, caseId: c.id, tone: 'bad', text: `${c.id}: ${k.def.label.toLowerCase()} is overdue` })
+        add({ id: `${c.id}:${k.def.id}:overdue`, at: k.dueAt, caseId: c.id, tone: 'bad', text: `${c.id}: ${k.def.label} is overdue` })
     }
 
     if (me.role === 'caseworker')

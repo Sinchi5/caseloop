@@ -1,3 +1,4 @@
+import { actorName } from './actors'
 import { isClosed, type CaseState } from './caseState'
 import { computeClocks, notesOwed, type ClockResult } from './clocks'
 import { RISK_RANK, riskLevel, type RiskLevel } from './risk'
@@ -47,6 +48,9 @@ export function rank(c: CaseState, now: number): Ranked {
     if (lateNotes) reasons.push(`${lateNotes} contact note${lateNotes > 1 ? 's' : ''} overdue`)
     if (risk === 'high') reasons.push('High risk at referral')
     if (!c.assignedTo) reasons.push('Not assigned to a caseworker')
+    const h = c.assignments.length > 1 ? c.assignments[c.assignments.length - 2] : undefined
+    if (h && c.assignedTo && now - c.assignedTo.at < 14 * 86_400_000)
+      reasons.push(`Changed hands ${formatSpan(now - c.assignedTo.at)} ago, from ${actorName(h.workerId)}`)
   }
   return { c, tier, risk, clocks, next, reasons }
 }
